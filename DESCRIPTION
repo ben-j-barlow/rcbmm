@@ -1,0 +1,25 @@
+Package: rcbmm
+Type: Package
+Title: Regularized Copula-Based Mixture Model: Estimation and Model Selection
+Version: 0.1.0
+Author: person("Ben", "Barlow", email = "ben.j.barlow.1@gmail.com", role = c("aut", "cre"))
+Maintainer: Ben Barlow <ben.j.barlow.1@gmail.com>
+Description: Model-based clustering through regularized copula-based mixture models with arbitrary marginal distributions. Estimation via the expectation-conditional-maximization algorithm. Shrinkage driven methods used to adaptively select optimal correlation structure regulated by a tuning parameter. Model selection based on average silhouette width and BIC.
+Encoding: UTF-8
+LazyData: true
+License: MIT + file LICENSE
+RoxygenNote: 7.1.1
+Suggests: 
+    testthat
+Imports: 
+    cluster,
+    utils,
+    parallel,
+    stats,
+    copula,
+    mvtnorm,
+    mclust,
+    fitdistrplus,
+    Rcpp
+LinkingTo: 
+    Rcpp
