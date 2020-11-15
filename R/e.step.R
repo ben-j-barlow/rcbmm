@@ -56,12 +56,14 @@ e.step <- function(x, K, mixing_probs, mvdc, margins) {
     u1[] <- pmin(u1, 1 - 1e-16)
     U <- qnorm(u1)
     corr <- copula::p2P(mvdc[[j]]@copula@parameters)
-    dcopula1 <- mvtnorm::dmvnorm(U, sigma = corr) / apply(dnorm(U), 1, prod)
+    dcopula1old <- mvtnorm::dmvnorm(U, sigma = corr) / apply(dnorm(U), 1, prod)
+    dcopula1 <- copula::dCopula(u, mvdc[[j]]@copula)
+    
     
     # handle small probabilities
     inds1 <- apply(u, 1, function(row)
     {
-      any((row = 1 - 1e-16) | (row <= 1e-16))
+      any((row >= 1 - 1e-16) | (row <= 1e-16))
     })
     dcopula1[inds1] <- 1e-16
     
