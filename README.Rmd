@@ -1,0 +1,47 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE, warning=F}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# rcbmm
+
+It is recommended to read the detailed model specification in Chapter 5 [here](https://github.com/ben-j-barlow/rcbmm/blob/main/documentation/Dissertation_documentation.pdf) before using the package.
+
+The key challenge imposed by modelling mixture model components using the multivariate normal distribution is that observed data is forced to obey very strict marginal properties, namely the normal distribution, which results in clusters that are limited to being elliptical in shape. Since this is not realistic in practice, copula-based mixtures have been of increasing popularity as they allow bounded- and mixed-domain data to be handled directly due to an arbitrary choice of marginal distributions. Resultantly, copula-based models facilitate a range of exotic cluster shapes. 
+
+The regularized copula-based model has been defined to allow for a wide range of parameterizations of mixtures of copulas. The introduction of a shrinkage penalty on the log-likelihood of the model encourages the copula parameters to approach 0. This is controlled by a positive tuning parameter that can take an infinte number of values, thereby creating an infinte number of model parameterizations. Optimal shrinkage is determined for a fixed number of mixture components by choosing the model that results in maximal mean silhouette width. 
+
+[**rcbmm**](https://github.com/ben-j-barlow/rcbmm) provides estimation (through expectation-maximization-algorithm - referred to as ECM) and model selection (using mean silhouette width and BIC) methods for the regularized copula-based mixture model.
+
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+## Installation
+
+The package is yet to be released on CRAN, but the development version can be installed from GitHub:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+require(devtools)
+load_all()
+```
+
+
+```{r, eval=F,warning=F}
+# install.packages("devtools")
+devtools::install_github("ben-j-barlow/rcbmm")
+```
+
+## Fitting a regularized copula-based mixutre model to observed data
+
+The workhorse function in **rcbmm** is `fit.rcbmm`, which takes observed data, pre-defined marginal distributions (the package's current form facilitates Normal, Beta, and Gamma marginals), a grid of values `K` representing mixture components to attempt model fitting with, and a tuning grid `lambda` to regulate the shrinkage-driven method that determines correlation structure. The function iterates over `K` and `lambda`, and for each value of `K` it: finds starting values in the case that no shrinkage is applied to the model; fits the corresponding model through ECM; increments the magnitude of shrinkage and uses the final parameters (the value of the parameters when convergence was achieved) from the previous ECM call as the starting values for the next ECM call (this approach is known as "warm restarts"). After the model has been fitted for all magnitudes of shrinkage for fixed K, it determines the optimal value of shrinkage for the given number of mixture components by choosing the model with the maximum mean silhouette width. Finally, the function chooses the final model (the optimal number of mixture components) using BIC.
+
