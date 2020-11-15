@@ -8,7 +8,8 @@
 #' @param transform A logical value indicating whether or not starting values should be obtained using the transformations SPH, PCS, PCR and SVD. The default is \code{TRUE}.
 #' @param hc_pairs The results from MBHAC obtained from the function call \code{hc()} using the mclust package. If \code{NULL}, the function obtains the results by calling \code{hc()}.
 #' @param classification A numeric vector representing a partitioning of the data \code{x}. If not \code{NULL}, the clustering identified by the vector takeß preference over the clustering identified by \code{hc_pairs}.
-#'
+#' @param trace A logical value indicating if an update regarding the initialization procedure's progress should be displayed.
+#' 
 #' @return
 #' \itemize{
 #'   \item{mixing_probs}{A numeric vector indicating the starting values of the mixing proportions.}
@@ -22,13 +23,13 @@
 #' @importFrom stats pnorm pbeta pgamma sd
 #' @importFrom copula P2p normalCopula mvdc
 #' @importFrom parallel mcparallel mccollect
-#' @importFrom mclust hcVVV hc Mclust mclustBIC
+#' @importFrom mclust hcVVV hc Mclust mclustBIC hclass
 #' @importFrom fitdistrplus fitdist
 #' @importFrom utils tail
 #' 
 #' @export
 #' 
-initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, classification = NULL) {
+initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, classification = NULL, trace = TRUE) {
   compute.u <- function(x, margins, marginal_params) {
     # Input:  observed data, marginal distributions of data, marginal parameters of a mixture component
     # Output: cumulative probabilities of membership to mixture component
@@ -43,58 +44,28 @@ initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, cla
   
   
   initialize.component <- function(comp_data, margins) {
-    # Input:  observed data, marginal distributions of data
-    # Output: an object of class mvdc containing the initial estimates for the marginal parameters and copula parameter
-    
-    # compute marginal parameters estimate
     marginal_param <- lapply(1:p, function(t) {
       switch(margins[t],
-             norm = list(mean = mean(comp_data[, t]), sd = stats::sd(comp_data[, t])),
-             beta = as.list(fitdistrplus::fitdist(comp_data[, t], "beta", "mle")$estimate),
-             gamma = as.list(fitdistrplus::fitdist(comp_data[, t], "gamma", "mle")$estimate))
+             norm = list(mean = mean(comp_data[, t]), sd = sd(comp_data[, t])),
+             beta = as.list(fitdist(comp_data[, t], "gamma", "mle")$estimate),
+             gamma = as.list(fitdist(comp_data[, t], "gamma", "mle")$estimate))
     })
     
-    # compute copula paramter estimate
     u <- compute.u(comp_data, margins, marginal_param)
-    if (any(is.na(u))) {
-      cat("Marginals cause numerical issues \n")
-      return(NA)
-    }
-    u[u > 0.999] <- 0.999
+    if (any(is.na(u)))
+      stop("Marginals cause numerical issues")
     u[u < 0.001] <- 0.001
+    u[u > 0.999] <- 0.999
     
-    use_copy <- F
-    copy <- cop_param <- copula::P2p(stats::cov2cor(stats::cov(comp_data)))
+    cop_param <- P2p(cov2cor(cov(comp_data)))
+    #cop_param <- try(fitCopula(copula = cop <- normalCopula(cop_param, p, "un"),
+    #          method = "mpl",
+    #          data = u)@estimate)
+    #cat("Diff", cop_param - copy, "\n")
+    #if (inherits(cop_param, "try-error"))
+    #  stop("Could not fit copula to data")
     
-    # fit copula to identify copula parameter
-    cop_param <- try(copula::fitCopula(copula = copula::normalCopula(cop_param, p, "un"),
-                                       method = "mpl",
-                                       data = u)
-                     @estimate)
-    
-    if (inherits(cop_param, "try-error")) {
-      ex_param  <- try(copula::fitCopula(copula = copula::normalCopula(0.3, p, "ex"),
-                                         method = "mpl",
-                                         data = u)
-                       @estimate)
-      cop_param <- try(copula::fitCopula(copula = copula::normalCopula(rep(ex_param, p * (p - 1) / 2), p, "un"),
-                                         method = "mpl",
-                                         data = u)
-                       @estimate)
-      if (inherits(cop_param, "try-error"))
-        use_copy <- T
-    }
-    
-    # collate copula parameter and marginal parameters into mvdc object
-    if (use_copy) {
-      mvdist <- copula::mvdc(copula::normalCopula(copy, p, "un"), 
-                             margins = margins, 
-                             paramMargins = marginal_param)
-    } else {
-      mvdist <- copula::mvdc(copula::normalCopula(cop_param, p, "un"), 
-                             margins = margins, 
-                             paramMargins = marginal_param)
-    }
+    mvdist <- mvdc(normalCopula(cop_param, p, "un"), margins = margins, paramMargins = marginal_param)
     return(mvdist)
   }
   
@@ -105,79 +76,53 @@ initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, cla
   # fit the data to a normal mixutre model using mclust (and its available transformations) 
   transformation <- if (transform) c("SPH", "PCS", "PCR", "SVD", "VARS") else ("VARS")
   CBMM_fit <- mclust_mods <- as.list(rep(NA, length((transformation))))
-  if (is.null(hc_pairs))
-    hc_pairs <- lapply(as.list(transformation), function(trans) mclust::hc(x, "VVV", use = trans))
-  if (length(transformation) != length(hc_pairs))
-    stop("Transformations must be of same length as hc_pairs")
-  
-  # determine if initial estimate procedure is to be mclust or cbmm
-  method <- "mclust"
-  for (pointer in 1:length(transformation)) {
-    mclust_mods[[pointer]] <- mclust::Mclust(x, K, "VVV", initialization = list(hcPairs = hc_pairs[[pointer]]), verbose = 0)
-    # if null returned by Mclust
-    if (length(mclust_mods[[pointer]]) == 1) { 
-      method <- "cbmm"
-      break
-    }
+  if (is.null(classification)) {
+    if (is.null(hc_pairs)) 
+      hc_pairs <- lapply(as.list(transformation), function(trans) mclust::hc(x, "VVV", use = trans))
+    if (length(transformation) != length(hc_pairs))
+      stop("Transformations must be of same length as hc_pairs")
   }
   
   
-  if (method == "mclust") {
-    get.fit <- function(pointer) {
-      # fit each component of the model
-      if (is.null(classification))
-        classification <- mclust_mods[[pointer]]$classification
-      mixing_probs <- table(classification) / n
-      result <- lapply(1:K,
-                       function(j) parallel::mcparallel(initialize.component(x[classification == j, ], margins), name = j))
-      mvdc <- parallel::mccollect(result)
-      
-      # compute likelihood
-      component_densities <- e.step(x, K, mixing_probs, mvdc, margins)
-      normalizing_const <- rowSums(component_densities)
-      loglik <- sum(log(normalizing_const))
-      if (transform) cat("transformation: ", transformation[pointer], " mclust loglik: ", mclust_mods[[pointer]]$loglik, "   CBMM loglik: ", loglik, "\n")
-      
-      # return starting values identified for given transformation and the likelihood
-      return(list(mixing_probs = mixing_probs,
-                  mvdc = mvdc,
-                  loglik = loglik,
-                  transformation = transformation[pointer]))
-    }
-  } else {
-    cat("Model fitting via mclust failed. Using MBHAC results to provide an initial classification.\n")
-    get.fit <- function(pointer) {
-      # fit each component of the model
-      if (is.null(classification))
-        classification <- as.vector(mclust::hclass(hc_pairs[[pointer]], K))
-      mixing_probs <- table(classification) / n
-      result <- lapply(1:K,
-                       function(j) parallel::mcparallel(initialize.component(x[classification == j, ], margins), name = j))
-      mvdc <- parallel::mccollect(result)
-      
-      #start <- list(mixing_probs = mixing_probs, mvdc = mvdc, transformation = transformation[pointer], loglik = NULL)
-      #ECM_out <- ECM.Algorithm(x, K, lambda = 0, start = start, margins = margins, trace = F, maxit = 1)
-      #if (is.null(ECM_out))
-      #return(NA)
-      #component_densities <- e.step(x, K, ECM_out$mixing_probs, ECM_out$mvdc, margins)
-      
-      # compute likelihood 
-      component_densities <- e.step(x, K, mixing_probs, mvdc, margins)
-      normalizing_const <- rowSums(component_densities)
-      loglik <- sum(log(normalizing_const))
-      cat("Transformation: ", transformation[pointer], "  loglik: ", loglik, "\n")
-      
-      #return(list(mixing_probs = ECM_out$mixing_probs,
-      #            mvdc = ECM_out$mvdc,
-      #            loglik = loglik,
-      #            transformation = transformation[pointer]))
-      
-      # return starting values identified for given transformation and the likelihood
-      return(list(mixing_probs = mixing_probs,
-                  mvdc = mvdc,
-                  loglik = loglik,
-                  transformation = transformation[pointer]))
-    }
+  get.fit <- function(pointer) {
+    # fit each component of the model
+    if (is.null(classification))
+      classification <- mclust::hclass(hc_pairs[[pointer]], K)
+    mixing_probs <- table(classification) / n
+    
+    mvdc <- lapply(1:K, function(j) initialize.component(x[classification == j,], margins))
+    start <- list(mixing_probs = mixing_probs, mvdc = mvdc, transformation = transformation[pointer], loglik = NULL)
+    
+    # perform ECM for 1 iteration
+    # component_densities <-
+    #   e.step(x, K, mixing_probs, mvdc, margins)
+    # normalizing_const <- rowSums(component_densities)
+    # z <- component_densities / normalizing_const
+    # mixing_probs <- apply(z, 2, function(a)
+    #   sum(a)) / n
+    # mvdc <- cm.step.1(x, K, z, mvdc, margins, trace = trace)
+    # CM_2_out <-
+    #   cm.step.2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 0, trace = trace)
+    # mvdc <- CM_2_out$mvdc
+    
+    ECMout <- ecm(x = x, K = K, lambda = 0, start = start, margins = margins, trace = FALSE, maxit = 2)
+    
+    
+    # compute likelihood
+    component_densities <-
+      e.step(x, K, mixing_probs, mvdc, margins)
+    normalizing_const <- rowSums(component_densities)
+    loglik <- sum(log(normalizing_const))
+    #if (transform) cat("transformation: ",transformation[pointer]," mclust loglik: ",mclust_mods[[pointer]]$loglik,"   CBMM loglik: ",loglik,"\n")
+    
+    # return starting values identified for given transformation and the likelihood
+    return(list(mixing_probs = mixing_probs,
+                mvdc = mvdc,
+                loglik = loglik,
+                transformation = transformation[pointer]
+      )
+    )
+    
   }
   
   # collate the models corresponding to each transformation
@@ -187,7 +132,7 @@ initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, cla
     if (length(CBMM_fit[[pointer]]) > 1) {
       succ_fits <- succ_fits + 1
     } else {
-      cat("Transformation: ", transformation[pointer], "  unsuccessful fit", "\n")
+      if (trace) cat("Transformation: ", transformation[pointer], "  unsuccessful fit", "\n")
     }
   }
   
@@ -203,7 +148,7 @@ initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, cla
   chosen_ind <- if (length(inds) == 1) inds else sample(inds, 1)
   best_fit <- CBMM_fit[[chosen_ind]]
   
-  cat("chosen fit: ", best_fit$transformation, "loglik", best_fit$loglik, "\n")
+  if (trace) cat("initial model: loglik", best_fit$loglik, "\n")
   
   return(list(mixing_probs = best_fit$mixing_probs,
               mvdc = best_fit$mvdc,
