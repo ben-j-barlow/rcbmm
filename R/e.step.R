@@ -52,7 +52,7 @@ e.step <- function(x, K, mixing_probs, mvdc, margins) {
   z <- matrix(0, n, K)
   for (j in 1:K) {
     # compute density of copula
-    u <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins)
+    u <- u1 <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins)
     u1[] <- pmin(u1, 1 - 1e-16)
     U <- qnorm(u1)
     corr <- copula::p2P(mvdc[[j]]@copula@parameters)
