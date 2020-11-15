@@ -22,7 +22,7 @@
 #' @importFrom stats pnorm pbeta pgamma sd
 #' @importFrom copula P2p normalCopula mvdc
 #' @importFrom parallel mcparallel mccollect
-#' @importFrom mclust Mclust hc hclass
+#' @importFrom mclust hcVVV hc Mclust mclustBIC
 #' @importFrom fitdistrplus fitdist
 #' @importFrom utils tail
 #' 
@@ -114,7 +114,8 @@ initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, cla
   method <- "mclust"
   for (pointer in 1:length(transformation)) {
     mclust_mods[[pointer]] <- mclust::Mclust(x, K, "VVV", initialization = list(hcPairs = hc_pairs[[pointer]]), verbose = 0)
-    if (is.na(mclust_mods[[pointer]])) {
+    # if null returned by Mclust
+    if (length(mclust_mods[[pointer]]) == 1) { 
       method <- "cbmm"
       break
     }
@@ -135,7 +136,7 @@ initialize.ecm <- function(x, K, margins, transform = TRUE, hc_pairs = NULL, cla
       component_densities <- e.step(x, K, mixing_probs, mvdc, margins)
       normalizing_const <- rowSums(component_densities)
       loglik <- sum(log(normalizing_const))
-      cat("transformation: ", transformation[pointer], " mclust loglik: ", mclust_mods[[pointer]]$loglik, "   CBMM loglik: ", loglik, "\n")
+      if (transform) cat("transformation: ", transformation[pointer], " mclust loglik: ", mclust_mods[[pointer]]$loglik, "   CBMM loglik: ", loglik, "\n")
       
       # return starting values identified for given transformation and the likelihood
       return(list(mixing_probs = mixing_probs,
