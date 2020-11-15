@@ -66,9 +66,8 @@ ecm <- function(x, K, lambda,
   while (test) {
     # E-step
     component_densities <- e.step(x, K, mixing_probs, mvdc, margins)
-    if (is.na(component_densities)) {
-      return(NA)
-    }
+    #if (is.na(component_densities)) return(NA)
+    
     normalizing_const <- rowSums(component_densities)
     z <- component_densities / normalizing_const
 
@@ -78,23 +77,25 @@ ecm <- function(x, K, lambda,
     # M-step 2
     # CM 1 (M-step 2)
     mvdc <- cm.step.1(x, K, z, mvdc, margins, trace = trace)
-    if (is.na(mvdc)) {
-      return(NA)
-    }
+    #if (is.na(mvdc)) return(NA)
+    
     # CM 2 (M-step 2)
     CM_2_out <- cm.step.2(x, K, z, mvdc, margins, lambda, trace = trace)
-    if (is.na(CM_2_out)) {
-      return(NA)
-    }
+    #if (is.na(CM_2_out)) return(NA)
+    
     mvdc <- CM_2_out$mvdc
     pen <- CM_2_out$penalty
 
     # compute log-likelihood
     loglike_unpenalized[k] <- sum(log(normalizing_const))
     loglike[k] <- loglike_unpenalized[k] - pen
-
+    
+    k_out <- if (k < 11) c(k - 1, "") else (k - 1)
     # evaluate loop conditioning
-    if (trace) cat("k ", k, "loglik (non-penalized):", round(loglike_unpenalized[k], 3), "   loglik:", round(loglike[k], 3), "\n")
+    if (trace & k > 1) {
+      if (lambda == 0) cat("k ", k_out, "loglik (non-penalized):", round(loglike_unpenalized[k], 3), "\n") 
+      else cat("k ", k_out, "loglik (non-penalized):", round(loglike_unpenalized[k], 3), "   loglik:", round(loglike[k], 3), "\n")
+    }
     cond1 <- if (k < 2) TRUE else (abs((loglike[k] - loglike[k - 1]) / loglike[k - 1]) > epsilon)
     cond2 <- k < maxit
     test <- isTRUE(cond1 && cond2)
