@@ -83,8 +83,8 @@ fit.rcbmm <- function(x,
     names(models[[i]]) <- lapply(lambda_grid, function(a) paste("lam=", (a), sep = ""))
     
     # find starting values for fixed K
-    cat("Retrieving starting values for K =", K[i], "\n")
-    start <- initialize.ecm(x, K[i], margins = margins, transform = transform, hc_pairs = hc_pairs)
+    if (trace) cat("Retrieving starting values for K =", K[i], "\n")
+    start <- initialize.ecm(x, K[i], margins = margins, transform = transform, hc_pairs = hc_pairs, trace = trace)
     if (is.na(start) & !transform) {
       cat("Recommend attempting starting values with transformations for K = ", K[i], "\n")
     } else {
@@ -102,9 +102,9 @@ fit.rcbmm <- function(x,
                       trace = trace,
                       dist_mat = dist_mat)
         if (is.na(ECM_out)) {
-          cat("K=", K[i], " ; lam=", lambda_grid[j], " ; loglik=UNSUCCESSFUL",  "\n")
+          if (trace) cat("K=", K[i], " ; lam=", lambda_grid[j], " ; loglik=UNSUCCESSFUL",  "\n")
         } else {
-          cat("K=", K[i], " ; lam=", lambda_grid[j], " ; loglik=", utils::tail(ECM_out$loglik, 1),  "\n")
+          if (trace) cat("K=", K[i], " ; lam=", lambda_grid[j], " ; loglik=", utils::tail(ECM_out$loglik, 1),  "\n")
           
           # record BIC, mean silhouette width and the model returned by ECM
           models[[i]][[j]] <- ECM_out
