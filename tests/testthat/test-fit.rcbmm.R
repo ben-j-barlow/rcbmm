@@ -1,4 +1,4 @@
-test_that("multiplication works", {
+test_that("Iris model selection works", {
   iris_x <- iris[, -5]
   iris_marginal_distribution <- rep('norm', 4)
   iris_K <- 3
