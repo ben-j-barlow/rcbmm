@@ -28,7 +28,7 @@
 #' 
 #' @export
 #' 
-initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, classification = NULL) {
+initialize.ecm.old <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, classification = NULL) {
   compute.u <- function(x, margins, marginal_params) {
     # Input:  observed data, marginal distributions of data, marginal parameters of a mixture component
     # Output: cumulative probabilities of membership to mixture component

@@ -30,46 +30,6 @@
 #' @export
 #' 
 initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, classification = NULL, trace = TRUE) {
-  compute.u <- function(x, margins, marginal_params) {
-    # Input:  observed data, marginal distributions of data, marginal parameters of a mixture component
-    # Output: cumulative probabilities of membership to mixture component
-    sapply(1:p, function(t) {
-      pars <-  as.numeric(marginal_params[[t]])
-      switch(margins[t],
-             norm = stats::pnorm(x[, t], pars[1], pars[2]),
-             gamma = stats::pgamma(x[, t], shape = pars[1], rate = pars[2]),
-             beta = stats::pbeta(x[, t], pars[1], pars[2]))
-    })
-  }
-  
-  
-  initialize.component <- function(comp_data, margins) {
-    marginal_param <- lapply(1:p, function(t) {
-      switch(margins[t],
-             norm = list(mean = mean(comp_data[, t]), sd = sd(comp_data[, t])),
-             beta = as.list(fitdist(comp_data[, t], "gamma", "mle")$estimate),
-             gamma = as.list(fitdist(comp_data[, t], "gamma", "mle")$estimate))
-    })
-    
-    u <- compute.u(comp_data, margins, marginal_param)
-    if (any(is.na(u)))
-      stop("Marginals cause numerical issues")
-    u[u < 0.001] <- 0.001
-    u[u > 0.999] <- 0.999
-    
-    cop_param <- P2p(cov2cor(cov(comp_data)))
-    #cop_param <- try(fitCopula(copula = cop <- normalCopula(cop_param, p, "un"),
-    #          method = "mpl",
-    #          data = u)@estimate)
-    #cat("Diff", cop_param - copy, "\n")
-    #if (inherits(cop_param, "try-error"))
-    #  stop("Could not fit copula to data")
-    
-    mvdist <- mvdc(normalCopula(cop_param, p, "un"), margins = margins, paramMargins = marginal_param)
-    return(mvdist)
-  }
-  
-  
   x <- if (is.vector(x)) matrix(x, ncol = 1) else as.matrix(x)
   n <- nrow(x) ; p <- ncol(x)
   
@@ -84,51 +44,10 @@ initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, cl
   }
   
   
-  get.fit <- function(pointer) {
-    # fit each component of the model
-    if (is.null(classification))
-      classification <- mclust::hclass(hc_pairs[[pointer]], K)
-    mixing_probs <- table(classification) / n
-    
-    mvdc <- lapply(1:K, function(j) initialize.component(x[classification == j,], margins))
-    start <- list(mixing_probs = mixing_probs, mvdc = mvdc, transformation = transformation[pointer], loglik = NULL)
-    
-    # perform ECM for 1 iteration
-    # component_densities <-
-    #   e.step(x, K, mixing_probs, mvdc, margins)
-    # normalizing_const <- rowSums(component_densities)
-    # z <- component_densities / normalizing_const
-    # mixing_probs <- apply(z, 2, function(a)
-    #   sum(a)) / n
-    # mvdc <- cm.step.1(x, K, z, mvdc, margins, trace = trace)
-    # CM_2_out <-
-    #   cm.step.2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 0, trace = trace)
-    # mvdc <- CM_2_out$mvdc
-    
-    ECMout <- ecm(x = x, K = K, lambda = 0, start = start, margins = margins, trace = FALSE, maxit = 2)
-    
-    
-    # compute likelihood
-    component_densities <-
-      e.step(x, K, mixing_probs, mvdc, margins)
-    normalizing_const <- rowSums(component_densities)
-    loglik <- sum(log(normalizing_const))
-    #if (transform) cat("transformation: ",transformation[pointer]," mclust loglik: ",mclust_mods[[pointer]]$loglik,"   CBMM loglik: ",loglik,"\n")
-    
-    # return starting values identified for given transformation and the likelihood
-    return(list(mixing_probs = mixing_probs,
-                mvdc = mvdc,
-                loglik = loglik,
-                transformation = transformation[pointer]
-      )
-    )
-    
-  }
-  
   # collate the models corresponding to each transformation
   succ_fits <- 0
   for (pointer in 1:length(transformation)) {
-    CBMM_fit[[pointer]] <- get.fit(pointer)
+    CBMM_fit[[pointer]] <- get.fit(pointer = pointer, K = K, classification = classification, x = x, margins = margins, transformation = transformation, hc_pairs = hc_pairs)
     if (length(CBMM_fit[[pointer]]) > 1) {
       succ_fits <- succ_fits + 1
     } else {
@@ -155,3 +74,74 @@ initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, cl
               transformation = best_fit$transformation,
               loglik = utils::tail(best_fit$loglik, 1)))
 }
+
+
+
+get.fit <- function(pointer, K, classification, x, margins, transformation, hc_pairs) {
+  n <- nrow(x)
+  # fit each component of the model
+  if (is.null(classification))
+    classification <- mclust::hclass(hc_pairs[[pointer]], K)
+  mixing_probs <- table(classification) / n
+  
+  mvdc <- lapply(1:K, function(j) initialize.component(x[classification == j,], margins))
+  start <- list(mixing_probs = mixing_probs, mvdc = mvdc, transformation = transformation[pointer], loglik = NULL)
+  
+  # perform ECM for 1 iteration
+  # component_densities <-
+  #   e.step(x, K, mixing_probs, mvdc, margins)
+  # normalizing_const <- rowSums(component_densities)
+  # z <- component_densities / normalizing_const
+  # mixing_probs <- apply(z, 2, function(a)
+  #   sum(a)) / n
+  # mvdc <- cm.step.1(x, K, z, mvdc, margins, trace = trace)
+  # CM_2_out <-
+  #   cm.step.2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 0, trace = trace)
+  # mvdc <- CM_2_out$mvdc
+  
+  ECM_out <- ecm(x = x, K = K, lambda = 0, start = start, margins = margins, trace = FALSE, maxit = 2)
+  
+  
+  # compute likelihood
+  component_densities <-
+    e.step(x, K, ECM_out$mixing_probs, ECM_out$mvdc, margins)
+  normalizing_const <- rowSums(component_densities)
+  loglik <- sum(log(normalizing_const))
+  #if (transform) cat("transformation: ",transformation[pointer]," mclust loglik: ",mclust_mods[[pointer]]$loglik,"   CBMM loglik: ",loglik,"\n")
+  
+  # return starting values identified for given transformation and the likelihood
+  return(list(mixing_probs = mixing_probs,
+              mvdc = mvdc,
+              loglik = loglik,
+              transformation = transformation[pointer]))
+}
+
+
+
+initialize.component <- function(comp_data, margins) {
+  p <- ncol(comp_data)
+  marginal_param <- lapply(1:p, function(t) {
+    switch(margins[t],
+           norm = list(mean = mean(comp_data[, t]), sd = stats::sd(comp_data[, t])),
+           beta = as.list(fitdistrplus::fitdist(comp_data[, t], "beta", "mle")$estimate),
+           gamma = as.list(fitdistrplus::fitdist(comp_data[, t], "gamma", "mle")$estimate))
+  })
+  
+  u <- compute.u(comp_data, margins, marginal_param)
+  if (any(is.na(u)))
+    stop("Marginals cause numerical issues")
+  u[u < 0.001] <- 0.001
+  u[u > 0.999] <- 0.999
+  
+  cop_param <- copula::P2p(stats::cov2cor(cov(comp_data)))
+  #cop_param <- try(fitCopula(copula = cop <- normalCopula(cop_param, p, "un"),
+  #          method = "mpl",
+  #          data = u)@estimate)
+  #cat("Diff", cop_param - copy, "\n")
+  #if (inherits(cop_param, "try-error"))
+  #  stop("Could not fit copula to data")
+  
+  mvdist <- mvdc(copula::normalCopula(cop_param, p, "un"), margins = margins, paramMargins = marginal_param)
+  return(mvdist)
+}
+

@@ -37,6 +37,7 @@
 ecm <- function(x, K, lambda,
                 start = NULL, margins,
                 trace = TRUE, maxit = 1000, epsilon = 1e-06, dist_mat = NULL) {
+  
   # data validation
   x <- if (is.vector(x)) matrix(x, ncol = 1) else as.matrix(x)
   n <- nrow(x)
@@ -53,7 +54,7 @@ ecm <- function(x, K, lambda,
   if (any(is.na(x))) {
     stop("Data is not clean")
   }
-
+  
 
   # initialize
   mixing_probs <- start[[1]]
@@ -76,7 +77,7 @@ ecm <- function(x, K, lambda,
 
     # M-step 2
     # CM 1 (M-step 2)
-    mvdc <- cm.step.1(x, K, z, mvdc, margins, trace = trace)
+    mvdc <- cm.step.1(x = x, K = K, z = z, mvdc = mvdc, margins = margins, trace = trace)
     #if (is.na(mvdc)) return(NA)
     
     # CM 2 (M-step 2)
