@@ -28,17 +28,28 @@ cm.step.1 <- function(x, K, z, mvdc, margins, trace = TRUE, restrictions = TRUE,
   n <- row(x) ; p <- ncol(x)
   # perform for each mixture component in parallel
   result <- lapply(1:K,
-                   function(j) parallel::mcparallel(cm.step.1.component(j = j, method = "BFGS",  mvdc = mvdc, margins = margins, z = z, x = x), name = j))
+                   function(j) parallel::mcparallel(try(cm.step.1.component(j = j,
+                                                                            method = "BFGS",
+                                                                            mvdc = mvdc, 
+                                                                            margins = margins, 
+                                                                            z = z, 
+                                                                            x = x)), 
+                                                    name = j))
   result <- parallel::mccollect(result)
   #result <- list()
   #for (j in 1:K) 
   #  result[[j]] <- cm.step.1.component(j = j, method = "BFGS",  mvdc = mvdc, margins = margins, z = z, x = x)
   
-  
   if (any(sapply(result, function(res) inherits(res, "try-error")))) {
     if (trace) cat("Nelder-Mead used in CM 1 \n")
     result <- lapply(1:K,
-                     function(j) parallel::mcparallel(expr(j, "Nelder-Mead"), name = j))
+                     function(j) parallel::mcparallel(try(cm.step.1.component(j = j,
+                                                                              method = "Nelder-Mead",
+                                                                              mvdc = mvdc, 
+                                                                              margins = margins, 
+                                                                              z = z, 
+                                                                              x = x)), 
+                                                      name = j))
     result <- parallel::mccollect(result)
     
     if (any(sapply(result, function(res) inherits(res, "try-error")))) {
