@@ -27,3 +27,26 @@ CM.1.optimiser <- function(param, post_probs, param_format, x, mvdc, margins) {
   lik <- sum(res[inds1])
   return(lik)
 }
+
+
+
+
+CM.2.optimiser <- function(param, post_probs, copula, u, lambda) {
+  # prepare copula object using angles parameters parsed
+  param <- inversetrans.ang(param)
+  cop_param <- copula::P2p(angles2rho(p2P.angles(param)))
+  copula@parameters <- cop_param
+  
+  if (any(is.na(u)))
+    return(-Inf)
+  
+  inds1 <- post_probs > 1e-16
+  res <- post_probs * log(copula::dCopula(u, copula = copula))
+  
+  # compute unpenalized likelihood
+  comp_1 <- sum(res[inds1])
+  # compute shrinkage pentaly
+  comp_2 <- lambda * sum((param - (pi/2))^2)
+  
+  return(comp_1 - comp_2)
+}

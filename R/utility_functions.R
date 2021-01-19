@@ -76,3 +76,13 @@ compute.dens <- function(x, margins, marginal_params) {
 applyProd <- function(xmat) {
   Reduce("*", as.data.frame(xmat), accumulate = FALSE)
 }
+
+# converts angles to whole real line prior to optimization
+trans.ang <- function(ang) {
+  tan((ang + pi)/2)
+}
+
+# converts transformed angles back to their correct value during optimization
+inversetrans.ang <- function(x) {
+  2*atan(x) + pi
+}
