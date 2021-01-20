@@ -21,35 +21,7 @@
 e.step <- function(x, K, mixing_probs, mvdc, margins) {
   n <- nrow(x) ; p <- ncol(x)
   
-  # computes cumulative probabilities for a given mixture component
-  compute.u <- function(x, margins, marginal_params) {
-    sapply(1:p, function(t) {
-      pars <-  as.numeric(marginal_params[[t]])
-      switch(margins[t],
-             norm = stats::pnorm(x[, t], pars[1], pars[2]),
-             gamma = stats::pgamma(x[, t], shape = pars[1], rate = pars[2]),
-             beta = stats::pbeta(x[, t], shape1 = pars[1], shape2 = pars[2])
-      )
-    })
-  }
-  
-  # computes density of marginal distributions for a given mixture component
-  compute.dens <- function(x, margins, marginal_params) {
-    sapply(1:p, function(t) {
-      pars <-  as.numeric(marginal_params[[t]])
-      switch(margins[t],
-             norm = stats::dnorm(x[, t], pars[1], pars[2]),
-             gamma = stats::dgamma(x[, t], shape = pars[1], rate = pars[2]),
-             beta = stats::dbeta(x[, t], shape1 = pars[1], shape2 = pars[2])
-      )
-    })
-  }
-  
-  applyProd <- function(xmat) {
-    Reduce("*", as.data.frame(xmat), accumulate=FALSE)
-  }
-  
-  z <- matrix(0, n, K)
+  component_densities <- matrix(0, n, K)
   for (j in 1:K) {
     # compute density of copula
     u <- u1 <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins)
@@ -67,13 +39,13 @@ e.step <- function(x, K, mixing_probs, mvdc, margins) {
     dcopula1[inds1] <- 1e-16
     
     # compute probability of membership to component for each observation
-    z[, j] <- mixing_probs[j] * dcopula1 * applyProd(compute.dens(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins))
+    component_densities[, j] <- mixing_probs[j] * dcopula1 * applyProd(compute.dens(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins))
   }
   
-  if (any(is.na(z))) {
+  if (any(is.na(component_densities))) {
     cat("Numerical errors occured when performing E-step \n")
     return(NA)
   }
   
-  return(z)
+  return(component_densities)
 }
