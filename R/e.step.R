@@ -12,7 +12,7 @@
 #' 
 #' @seealso \code{\link[rcbmm]{ecm}}
 #' 
-#' @importFrom stats pnorm pgamma pbeta dgamma dbeta dnorm qnorm
+#' @importFrom stats qnorm
 #' @importFrom copula p2P
 #' @importFrom mvtnorm dmvnorm
 #' 
@@ -25,9 +25,11 @@ e.step <- function(x, K, mixing_probs, mvdc, margins) {
   for (j in 1:K) {
     # compute density of copula
     u <- u1 <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins)
+    #u <- u1 <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]$marg_pars)
     u1[] <- pmin(u1, 1 - 1e-16)
-    U <- qnorm(u1)
+    U <- stats::qnorm(u1)
     corr <- copula::p2P(mvdc[[j]]@copula@parameters)
+    #corr <- copula::p2P(mvdc[[j]]$cop_pars)
     dcopula1 <- mvtnorm::dmvnorm(U, sigma = corr) / apply(dnorm(U), 1, prod)
     
     
