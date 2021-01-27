@@ -125,7 +125,7 @@ get.fit <- function(K, classification, x, margins, transformation_name, transfor
   return(list(mixing_probs = mixing_probs,
               mvdc = mvdc,
               loglik = loglik,
-              transformation = transformation[pointer]))
+              transformation = transformation_name))
 }
 
 
@@ -160,7 +160,7 @@ initialize.component <- function(comp_data, margins) {
   #  stop("Could not fit copula to data")
   mvdist <- copula::mvdc(copula = copula::ellipCopula(family = 'normal',
                                                       param = component_cop_pars, 
-                                                      dim = 3, 
+                                                      dim = p, 
                                                       dispstr = 'un'),
                          margins = margins,
                          paramMargins = component_marg_pars)

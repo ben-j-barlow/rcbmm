@@ -32,26 +32,17 @@
 cm.step.2 <- function(x, K, z, mvdc, margins, lambda, trace = TRUE) {
   p <- ncol(x)
   # perform for each mixture component in parallel
-  #result <- lapply(1:K,
-  #                 function(j) parallel::mcparallel(cm.step.2.component(j = j, 
-  #                                                                      method = "BFGS", 
-  #                                                                      x = x, 
-  #                                                                      margins = margins, 
-  #                                                                      component = mvdc[[j]], 
-  #                                                                      z = z, 
-  #                                                                      lambda = lambda)
-  #                                                  , name = j))
-  #result <- parallel::mccollect(result)
-  result <- list()
-  for (j in 1:K) {
-    result[[j]] <- try(cm.step.2.component(j = j, 
-                       method = "BFGS", 
-                       x = x, 
-                       margins = margins,
-                       component = mvdc[[j]], 
-                       z = z, 
-                       lambda = lambda))
-  }
+  result <- lapply(1:K,
+                   function(j) parallel::mcparallel(try(cm.step.2.component(j = j, 
+                                                                        method = "BFGS", 
+                                                                        x = x, 
+                                                                        margins = margins, 
+                                                                        component = mvdc[[j]], 
+                                                                        z = z, 
+                                                                        lambda = lambda))
+                                                    , name = j))
+  result <- parallel::mccollect(result)
+
   
   if (any(sapply(result, function(res) inherits(res, "try-error")))) {
     if (trace) cat("Nelder-Mead used in CM 2 \n")
@@ -93,16 +84,16 @@ cm.step.2.component <- function(j, method, x, margins, component, z, lambda) {
   start <- component@copula@parameters
   start <- P2p.angles(rho2angles(copula::p2P(start)))
   start <- trans.ang(start)
-  
+  browser()
   # use optimizer to find likelihood maximum
-  optim_out <- stats::optim(par = start, 
+  optim_out <- try(stats::optim(par = start, 
                             fn = CM.2.optimiser,
                             method = method,
                             control = list(fnscale = -1, trace = F),
                             post_probs = z[, j], 
                             u = u, 
                             copula = component@copula,
-                            lambda = lambda)
+                            lambda = lambda))
   
   # collate and return shrinkage penalty and new value of copula parameters returned by optimizer
   res <- optim_out$par

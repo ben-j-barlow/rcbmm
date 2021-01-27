@@ -39,7 +39,7 @@ CM.2.optimiser <- function(param, post_probs, copula, u, lambda) {
   
   if (any(is.na(u)))
     return(-Inf)
-  
+  # TODO : remove dependency on copula package
   inds1 <- post_probs > 1e-16
   res <- post_probs * log(copula::dCopula(u, copula = copula))
   
