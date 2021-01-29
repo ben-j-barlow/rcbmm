@@ -1,0 +1,59 @@
+---
+title: "rcbmm Vignette"
+author: "Ben Barlow"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+require(devtools)
+load_all()
+require(profvis)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=FALSE}
+lambda_grid = c(0, 5, 10)
+
+# nba
+load("nba.rda")
+margins_nba <- c(rep("beta", 6), "gamma")
+
+# iris
+iris_x <- iris[, -5]
+margins_iris <- rep('norm', 4)
+```
+
+## NBA
+### K = 2
+
+```{r, warning=FALSE}
+profvis(fit_rcbmm(
+    x = nba, lambda_grid = lambda_grid, K = 2, margins = margins_nba, transform = FALSE, trace = FALSE)
+  )
+```
+
+### K = 3
+
+```{r, warning=FALSE}
+system.time(fit_rcbmm(
+    nba, lambda_grid = lambda_grid, K = 3, margins = margins_nba, transform = FALSE, trace = TRUE)
+  )
+```
+
+## Iris
+### K = 2
+
+```{r, warning=FALSE}
+profvis(fit_rcbmm(
+    x = iris_x, lambda_grid = lambda_grid, K = 2, margins = margins_iris, transform = FALSE, trace = FALSE)
+  )
+```
+
+### K = 3
+
+```{r, warning=FALSE}
+system.time(fit_rcbmm(
+    x = iris_x, lambda_grid = lambda_grid, K = 3, margins = margins_iris, transform = FALSE, trace = FALSE)
+  )
+```
