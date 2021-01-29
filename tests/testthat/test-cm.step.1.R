@@ -39,7 +39,7 @@ test_that("cm1 for all components works", {
   z <- e_result / normalizing_const
   # M-step 1
   mixing_probs <- apply(z, 2, function(a) sum(a)) / nrow(x)
-  cm_1_out <- cm.step.1(x = x,
+  cm_1_out <- cm_step_1(x = x,
                        K = K,
                        z = z,
                        mvdc = mvdc,

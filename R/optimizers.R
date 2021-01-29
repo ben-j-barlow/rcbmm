@@ -1,19 +1,19 @@
-CM.1.optimiser <- function(param, post_probs, param_format, x, mvdc, margins) {
+cm_1_optimiser <- function(param, post_probs, param_format, x, mvdc, margins) {
   # prepare mvdc object using marginal parameters parsed
   p <- ncol(x)
   param <- utils::relist(flesh = param, skeleton = param_format)
-  param <- transform.back(margins, param)
+  param <- transform_back(margins, param)
   mvdc@paramMargins <- param
   
   inds1 <- post_probs > 1e-16
   
   # compute cumulative probabilities
-  u <- compute.u(x = x, margins = margins, marginal_params = mvdc@paramMargins)
+  u <- compute_u(x = x, margins = margins, marginal_params = mvdc@paramMargins)
   u[u > 0.999] <- 0.999
   u[u < 0.001] <- 0.001
   
   # evaluate density of marginal distributions
-  dens <- compute.dens(x = x, margins = margins, marginal_params = mvdc@paramMargins)
+  dens <- compute_dens(x = x, margins = margins, marginal_params = mvdc@paramMargins)
   
   if (any(is.na(u)) |
       any(is.na(dens))) {
@@ -23,7 +23,7 @@ CM.1.optimiser <- function(param, post_probs, param_format, x, mvdc, margins) {
   
   # return log-likelihood
   res <- post_probs * (log(copula::dCopula(u, copula = mvdc@copula)) +
-                         log(applyProd(dens)))
+                         log(apply_prod(dens)))
   lik <- sum(res[inds1])
   return(lik)
 }
@@ -31,10 +31,10 @@ CM.1.optimiser <- function(param, post_probs, param_format, x, mvdc, margins) {
 
 
 
-CM.2.optimiser <- function(param, post_probs, copula, u, lambda) {
+cm_2_optimiser <- function(param, post_probs, copula, u, lambda) {
   # prepare copula object using angles parameters parsed
-  param <- inversetrans.ang(param)
-  cop_param <- copula::P2p(angles2rho(p2P.angles(param)))
+  param <- inversetrans_ang(param)
+  cop_param <- copula::P2p(angles2rho(p2P_angles(param)))
   copula@parameters <- cop_param
   
   if (any(is.na(u)))

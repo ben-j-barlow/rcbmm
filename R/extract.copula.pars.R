@@ -12,7 +12,7 @@
 #' @importFrom copula p2P
 #' 
 #' @export
-extract.copula.pars <- function(mvdc, as_angles = F) {
+extract_copula_pars <- function(mvdc, as_angles = F) {
   if (as_angles) {
     return(lapply(mvdc, function(component) rho2angles(copula::p2P(component@copula@parameters))))
   } else {

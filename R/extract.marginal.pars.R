@@ -10,6 +10,6 @@
 #' 
 #' @export
 #' 
-extract.marginal.pars <- function(mvdc) {
+extract_marginal_pars <- function(mvdc) {
   lapply(mvdc, function(component) component@paramMargins)
 }

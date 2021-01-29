@@ -36,7 +36,7 @@ test_that("no shrinkage works", {
   mvdc3 <- copula::mvdc(copula = cop3, margins = margins, paramMargins = marg_pars[[3]])
   mvdc <- list(mvdc1, mvdc2, mvdc3)
   
-  cm_2_out <- cm.step.2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 0, trace = FALSE)
+  cm_2_out <- cm_step_2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 0, trace = FALSE)
   
   # check each marginal parameter for component 2
   expect_lt(cm_2_out$mvdc[[2]]@paramMargins[[1]]$mean - 0.2496645, 10e-08)
@@ -100,7 +100,7 @@ test_that("shrinkage works", {
   mvdc3 <- copula::mvdc(copula = cop3, margins = margins, paramMargins = marg_pars[[3]])
   mvdc <- list(mvdc1, mvdc2, mvdc3)
   
-  cm_2_out <- cm.step.2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 2.5, trace = FALSE)
+  cm_2_out <- cm_step_2(x = x, K = K, z = z, mvdc = mvdc, margins = margins, lambda = 2.5, trace = FALSE)
   
   # check each marginal parameter for component 2
   expect_lt(cm_2_out$mvdc[[2]]@paramMargins[[1]]$mean     - 0.2496645, 10e-08)

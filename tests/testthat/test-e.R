@@ -34,7 +34,7 @@ test_that("Expectation step accurate", {
   mvdc3 <- copula::mvdc(copula = cop3, margins = margins, paramMargins = marg_pars[[3]])
   mvdc <- list(mvdc1, mvdc2, mvdc3)
   
-  e_out <- e.step(x = x, K = K, mixing_probs = mix, mvdc = mvdc, margins = margins)
+  e_out <- e_step(x = x, K = K, mixing_probs = mix, mvdc = mvdc, margins = margins)
   
   ans_test <- e_out / rowSums(e_out)
   

@@ -66,7 +66,7 @@ ecm <- function(x, K, lambda,
 
   while (test) {
     # E-step
-    component_densities <- e.step(x, K, mixing_probs, mvdc, margins)
+    component_densities <- e_step(x, K, mixing_probs, mvdc, margins)
     #if (is.na(component_densities)) return(NA)
     
     normalizing_const <- rowSums(component_densities)
@@ -77,11 +77,11 @@ ecm <- function(x, K, lambda,
 
     # M-step 2
     # CM 1 (M-step 2)
-    mvdc <- cm.step.1(x = x, K = K, z = z, mvdc = mvdc, margins = margins, trace = trace)
+    mvdc <- cm_step_1(x = x, K = K, z = z, mvdc = mvdc, margins = margins, trace = trace)
     #if (is.na(mvdc)) return(NA)
     
     # CM 2 (M-step 2)
-    CM_2_out <- cm.step.2(x, K, z, mvdc, margins, lambda, trace = trace)
+    CM_2_out <- cm_step_2(x, K, z, mvdc, margins, lambda, trace = trace)
     #if (is.na(CM_2_out)) return(NA)
     
     mvdc <- CM_2_out$mvdc
@@ -92,6 +92,7 @@ ecm <- function(x, K, lambda,
     loglike[k] <- loglike_unpenalized[k] - pen
     
     k_out <- if (k < 11) c(k - 1, "") else (k - 1)
+    
     # evaluate loop conditioning
     if (trace & k > 1) {
       if (lambda == 0) cat("k ", k_out, "loglik (non-penalized):", round(loglike_unpenalized[k], 3), "\n") 
@@ -104,8 +105,8 @@ ecm <- function(x, K, lambda,
   }
 
   # prepare return
-  marginal_param <- extract.marginal.pars(mvdc)
-  copula_param <- extract.copula.pars(mvdc)
+  marginal_param <- extract_marginal_pars(mvdc)
+  copula_param <- extract_copula_pars(mvdc)
   v <- (K - 1) + length(unlist(marginal_param)) + (K / 2 * p * (p - 1))
 
   if (is.null(dist_mat)) {
@@ -126,7 +127,7 @@ ecm <- function(x, K, lambda,
     transformation = start$transformation,
     marginal_param = marginal_param,
     copula_param = copula_param,
-    copula_param_angles = extract.copula.pars(mvdc, as_angles = T),
+    copula_param_angles = extract_copula_pars(mvdc, as_angles = T),
     silhouette = cluster::silhouette(x = apply(z, 1, which.max), dist = dist_mat)
   ))
 }

@@ -30,7 +30,7 @@
 #' 
 #' @export
 #' 
-fit.rcbmm <- function(x, 
+fit_rcbmm <- function(x, 
                       lambda_grid, 
                       K = seq.int(2, 9), 
                       margins, 
@@ -84,7 +84,7 @@ fit.rcbmm <- function(x,
     
     # find starting values for fixed K
     if (trace) cat("Retrieving starting values for K =", K[i], "\n")
-    start <- initialize.ecm(x, K[i], margins = margins, transform = transform, hc_pairs = hc_pairs, trace = trace)
+    start <- initialize_ecm(x, K[i], margins = margins, transform = transform, hc_pairs = hc_pairs, trace = trace)
     if (is.na(start) & !transform) {
       cat("Recommend attempting starting values with transformations for K = ", K[i], "\n")
     } else {

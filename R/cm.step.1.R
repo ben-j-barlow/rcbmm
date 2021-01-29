@@ -24,11 +24,11 @@
 #' @importFrom utils relist
 #' 
 #' @export
-cm.step.1 <- function(x, K, z, mvdc, margins, trace = TRUE, restrictions = TRUE, variance_tolerance = 1e-05) {
+cm_step_1 <- function(x, K, z, mvdc, margins, trace = TRUE, restrictions = TRUE, variance_tolerance = 1e-05) {
   n <- row(x) ; p <- ncol(x)
   # perform for each mixture component in parallel
   result <- lapply(1:K,
-                   function(j) parallel::mcparallel(try(cm.step.1.component(j = j,
+                   function(j) parallel::mcparallel(try(cm_step_1_component(j = j,
                                                                             method = "BFGS",
                                                                             mvdc = mvdc, 
                                                                             margins = margins, 
@@ -43,7 +43,7 @@ cm.step.1 <- function(x, K, z, mvdc, margins, trace = TRUE, restrictions = TRUE,
   if (any(sapply(result, function(res) inherits(res, "try-error")))) {
     if (trace) cat("Nelder-Mead used in CM 1 \n")
     result <- lapply(1:K,
-                     function(j) parallel::mcparallel(try(cm.step.1.component(j = j,
+                     function(j) parallel::mcparallel(try(cm_step_1_component(j = j,
                                                                               method = "Nelder-Mead",
                                                                               mvdc = mvdc, 
                                                                               margins = margins, 
@@ -64,14 +64,14 @@ cm.step.1 <- function(x, K, z, mvdc, margins, trace = TRUE, restrictions = TRUE,
   return(mvdc)
 }
 
-cm.step.1.component <- function(j, method, mvdc, margins, z, x) {
+cm_step_1_component <- function(j, method, mvdc, margins, z, x) {
   # prepare the marginal parameters to be parsed to optimizer
   start <- mvdc[[j]]@paramMargins
-  start <- transform.margins(margins, start)
+  start <- transform_margins(margins, start)
   
   # use optimizer to find likelihood maximum
   optim_out <- try(stats::optim(par = unlist(start), 
-                                fn = CM.1.optimiser,
+                                fn = cm_1_optimiser,
                                 method = method,
                                 control = list(fnscale = -1, trace = F), 
                                 post_probs = z[, j],
@@ -82,7 +82,7 @@ cm.step.1.component <- function(j, method, mvdc, margins, z, x) {
   # collate and return new value of marginal parameters returned by optimizer
   res <- optim_out$par
   res <- utils::relist(flesh = res, skeleton = start)
-  res <- transform.back(margins, res)
+  res <- transform_back(margins, res)
   
   return(res)
 }

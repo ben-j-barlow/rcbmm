@@ -29,11 +29,11 @@
 #' 
 #' @export
 #' 
-cm.step.2 <- function(x, K, z, mvdc, margins, lambda, trace = TRUE) {
+cm_step_2 <- function(x, K, z, mvdc, margins, lambda, trace = TRUE) {
   p <- ncol(x)
   # perform for each mixture component in parallel
   result <- lapply(1:K,
-                   function(j) parallel::mcparallel(try(cm.step.2.component(j = j, 
+                   function(j) parallel::mcparallel(try(cm_step_2_component(j = j, 
                                                                         method = "BFGS", 
                                                                         x = x, 
                                                                         margins = margins, 
@@ -47,7 +47,7 @@ cm.step.2 <- function(x, K, z, mvdc, margins, lambda, trace = TRUE) {
   if (any(sapply(result, function(res) inherits(res, "try-error")))) {
     if (trace) cat("Nelder-Mead used in CM 2 \n")
     result <- lapply(1:K,
-                     function(j) parallel::mcparallel(try(cm.step.2.component(j = j, 
+                     function(j) parallel::mcparallel(try(cm_step_2_component(j = j, 
                                                                               method = "Nelder-Mead", 
                                                                               x = x, 
                                                                               margins = margins,
@@ -74,20 +74,20 @@ cm.step.2 <- function(x, K, z, mvdc, margins, lambda, trace = TRUE) {
 
 
 
-cm.step.2.component <- function(j, method, x, margins, component, z, lambda) {
+cm_step_2_component <- function(j, method, x, margins, component, z, lambda) {
   # compute cumulative probabilities for given mixture component
-  u <- compute.u(x = x, margins = margins, marginal_params = component@paramMargins)
+  u <- compute_u(x = x, margins = margins, marginal_params = component@paramMargins)
   u[u > 0.999] <- 0.999
   u[u < 0.001] <- 0.001
   
   # prepare copula parameters for optimization 
   start <- component@copula@parameters
-  start <- P2p.angles(rho2angles(copula::p2P(start)))
-  start <- trans.ang(start)
-  browser()
-  # use optimizer to find likelihood maximum
+  start <- P2p_angles(rho2angles(copula::p2P(start)))
+  start <- trans_ang(start)
+
+    # use optimizer to find likelihood maximum
   optim_out <- try(stats::optim(par = start, 
-                            fn = CM.2.optimiser,
+                            fn = cm_2_optimiser,
                             method = method,
                             control = list(fnscale = -1, trace = F),
                             post_probs = z[, j], 
@@ -97,10 +97,10 @@ cm.step.2.component <- function(j, method, x, margins, component, z, lambda) {
   
   # collate and return shrinkage penalty and new value of copula parameters returned by optimizer
   res <- optim_out$par
-  res <- inversetrans.ang(res)
+  res <- inversetrans_ang(res)
   penalty <- lambda * sum((res - (pi/2))^2)
   
-  res <- list(param = copula::P2p(angles2rho(p2P.angles(res))), 
+  res <- list(param = copula::P2p(angles2rho(p2P_angles(res))), 
               pen = penalty)
   return(res)
 }

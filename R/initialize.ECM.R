@@ -29,7 +29,7 @@
 #' 
 #' @export
 #' 
-initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, classification = NULL, trace = TRUE) {
+initialize_ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, classification = NULL, trace = TRUE) {
   x <- if (is.vector(x)) matrix(x, ncol = 1) else as.matrix(x)
   n <- nrow(x) ; p <- ncol(x)
   
@@ -47,7 +47,7 @@ initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, cl
   # collate the models corresponding to each transformation
   succ_fits <- 0
   for (pointer in 1:length(transformation)) {
-    CBMM_fit[[pointer]] <- get.fit(K = K,
+    CBMM_fit[[pointer]] <- get_fit(K = K,
                                    classification = classification,
                                    x = x,
                                    margins = margins,
@@ -82,14 +82,14 @@ initialize.ecm <- function(x, K, margins, transform = FALSE, hc_pairs = NULL, cl
 
 
 
-get.fit <- function(K, classification, x, margins, transformation_name, transformation_hc_pairs) {
+get_fit <- function(K, classification, x, margins, transformation_name, transformation_hc_pairs) {
   n <- nrow(x)
   # fit each component of the model
   if (is.null(classification))
     classification <- mclust::hclass(transformation_hc_pairs, K)
   mixing_probs <- table(classification) / n
   
-  mvdc <- lapply(1:K, function(j) initialize.component(x[classification == j,], margins))
+  mvdc <- lapply(1:K, function(j) initialize_component(x[classification == j,], margins))
   
   
   # perform ECM for 1 iteration
@@ -111,7 +111,7 @@ get.fit <- function(K, classification, x, margins, transformation_name, transfor
   #component_densities <-
   #  e.step(x, K, ECM_out$mixing_probs, ECM_out$mvdc, margins)
   
-  component_densities <- e.step(x = x,
+  component_densities <- e_step(x = x,
                                 K = K,
                                 mixing_probs = mixing_probs,
                                 mvdc = mvdc,
@@ -130,7 +130,7 @@ get.fit <- function(K, classification, x, margins, transformation_name, transfor
 
 
 
-initialize.component <- function(comp_data, margins) {
+initialize_component <- function(comp_data, margins) {
   if (!is.matrix(comp_data)) {
     stop("Support for single observation in component during initialization not offered yet")
   } else if (nrow(comp_data) == 0) {
@@ -145,7 +145,7 @@ initialize.component <- function(comp_data, margins) {
            gamma = as.list(fitdistrplus::fitdist(comp_data[, t], "gamma", "mle")$estimate))
   })
   
-  u <- compute.u(comp_data, margins, component_marg_pars)
+  u <- compute_u(comp_data, margins, component_marg_pars)
   if (any(is.na(u)))
     stop("Marginals cause numerical issues")
   u[u < 0.001] <- 0.001

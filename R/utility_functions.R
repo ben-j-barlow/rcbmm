@@ -1,4 +1,4 @@
-compute.u <- function(x, margins, marginal_params) {
+compute_u <- function(x, margins, marginal_params) {
   # Input:  observed data, marginal distributions of data, marginal parameters of a mixture component
   # Output: cumulative probabilities of membership to mixture component
   p <- ncol(x)
@@ -12,7 +12,7 @@ compute.u <- function(x, margins, marginal_params) {
 }
 
 # computes cumulative probabilities for a given mixture component
-compute.u.restrictions <- function(x, margins, marginal_params) {
+compute_u_restrictions <- function(x, margins, marginal_params) {
   restrictionBeta <- expression(pars[1]*pars[2]/((pars[1] + pars[2])^2*(pars[1] + pars[2]+1)))
   
   sapply(1:p, function(t) {
@@ -34,7 +34,7 @@ compute.u.restrictions <- function(x, margins, marginal_params) {
 
 
 # transforms marginal parameters to the whole real line prior to optimization
-transform.margins <- function(margins, marginal_params) {
+transform_margins <- function(margins, marginal_params) {
   p <- length(margins)
   lapply(1:p, function(t) {
     pars <-  as.numeric(marginal_params[[t]])
@@ -47,7 +47,7 @@ transform.margins <- function(margins, marginal_params) {
 }
 
 # converts transformed marginal parameters back to their correct value during optimization
-transform.back <- function(margins, marginal_params) {
+transform_back <- function(margins, marginal_params) {
   p <- length(margins)
   lapply(1:p, function(t) {
     pars <-  as.numeric(marginal_params[[t]])
@@ -60,7 +60,7 @@ transform.back <- function(margins, marginal_params) {
 }
 
 # computes density of marginal distributions for a given mixture component
-compute.dens <- function(x, margins, marginal_params) {
+compute_dens <- function(x, margins, marginal_params) {
   p <- ncol(x)
   sapply(1:p, function(t) {
     pars <-  as.numeric(marginal_params[[t]])
@@ -73,16 +73,16 @@ compute.dens <- function(x, margins, marginal_params) {
 }
 
 
-applyProd <- function(xmat) {
+apply_prod <- function(xmat) {
   Reduce("*", as.data.frame(xmat), accumulate = FALSE)
 }
 
 # converts angles to whole real line prior to optimization
-trans.ang <- function(ang) {
+trans_ang <- function(ang) {
   tan((ang + pi)/2)
 }
 
 # converts transformed angles back to their correct value during optimization
-inversetrans.ang <- function(x) {
+inversetrans_ang <- function(x) {
   2*atan(x) + pi
 }

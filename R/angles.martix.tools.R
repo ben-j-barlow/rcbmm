@@ -8,7 +8,7 @@
 #' 
 #' @export P2p.angles
 #' 
-P2p.angles <- function(theta) {
+P2p_angles <- function(theta) {
   return(theta[upper.tri(theta, diag = TRUE)])
 }
 
@@ -19,7 +19,7 @@ P2p.angles <- function(theta) {
 #' 
 #' @return A matrix of angles
 
-p2P.angles <- function(angles) {
+p2P_angles <- function(angles) {
   d <- ceiling(sqrt(2 * length(angles)) - 1)
   theta <- diag(0, nrow = d)
   theta[upper.tri(theta, diag = TRUE)] <- angles

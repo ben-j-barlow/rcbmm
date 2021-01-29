@@ -18,13 +18,13 @@
 #' 
 #' @export
 #' 
-e.step <- function(x, K, mixing_probs, mvdc, margins) {
+e_step <- function(x, K, mixing_probs, mvdc, margins) {
   n <- nrow(x) ; p <- ncol(x)
   
   component_densities <- matrix(0, n, K)
   for (j in 1:K) {
     # compute density of copula
-    u <- u1 <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins)
+    u <- u1 <- compute_u(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins)
     #u <- u1 <- compute.u(x = x, margins = margins, marginal_params = mvdc[[j]]$marg_pars)
     u1[] <- pmin(u1, 1 - 1e-16)
     U <- stats::qnorm(u1)
@@ -41,7 +41,7 @@ e.step <- function(x, K, mixing_probs, mvdc, margins) {
     dcopula1[inds1] <- 1e-16
     
     # compute probability of membership to component for each observation
-    component_densities[, j] <- mixing_probs[j] * dcopula1 * applyProd(compute.dens(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins))
+    component_densities[, j] <- mixing_probs[j] * dcopula1 * apply_prod(compute_dens(x = x, margins = margins, marginal_params = mvdc[[j]]@paramMargins))
   }
   
   if (any(is.na(component_densities))) {
