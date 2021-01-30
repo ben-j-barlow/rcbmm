@@ -6,14 +6,14 @@
 #' 
 #' @return A vector of angles
 #' 
-#' @export P2p.angles
+#' @export
 #' 
 P2p_angles <- function(theta) {
   return(theta[upper.tri(theta, diag = TRUE)])
 }
 
 #' @export
-#' @rdname P2p.angles
+#' @rdname P2p_angles
 #' 
 #' @param angles A vector of angles
 #' 
