@@ -107,7 +107,7 @@ ecm <- function(x, K, lambda,
   # prepare return
   marginal_param <- extract_marginal_pars(mvdc)
   copula_param <- extract_copula_pars(mvdc)
-  v <- (K - 1) + length(unlist(marginal_param)) + (K / 2 * p * (p - 1))
+  v <- (K - 1) + length(unlist(marginal_param, use.names = FALSE)) + (K / 2 * p * (p - 1))
 
   if (is.null(dist_mat)) {
     dist_mat <- stats::dist(x)

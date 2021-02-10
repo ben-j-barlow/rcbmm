@@ -70,7 +70,7 @@ cm_step_1_component <- function(j, method, mvdc, margins, z, x) {
   start <- transform_margins(margins, start)
   
   # use optimizer to find likelihood maximum
-  optim_out <- try(stats::optim(par = unlist(start), 
+  optim_out <- try(stats::optim(par = unlist(start, use.names = FALSE), 
                                 fn = cm_1_optimiser,
                                 method = method,
                                 control = list(fnscale = -1, trace = F), 
