@@ -19,7 +19,4 @@ Imports:
     copula,
     mvtnorm,
     mclust,
-    fitdistrplus,
-    Rcpp
-LinkingTo: 
-    Rcpp
+    fitdistrplus
